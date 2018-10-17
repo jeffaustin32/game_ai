@@ -3,7 +3,7 @@
     """
 from time import sleep
 import pyautogui
-from utilities import Utilities
+import utilities as utils
 from move import Move
 from user_interface import UserInterface
 from merchant import Merchant
@@ -16,7 +16,6 @@ class Forge():
     ITEM = 'dagger'
 
     def __init__(self, player, game_map):
-        self.utils = Utilities()
         self.user_interface = UserInterface()
         self.game_map = game_map
         self.move = Move(game_map)
@@ -47,7 +46,7 @@ class Forge():
             """
         # Get player's weight
         if self.player.is_weight_below_threshold(15):
-            self.utils.log("INFO", F"Weight is below threshold, selling {self.ITEM}s")
+            utils.log("INFO", F"Weight is below threshold, selling {self.ITEM}s")
             self.sell_items()
 
         # Buy a hammer if player has none
@@ -57,7 +56,7 @@ class Forge():
 
             # Still no hammer, buy one
             if not self.player.backpack.get_item('hammer'):
-                self.utils.log("INFO", "No hammers remain, buying a hammer")
+                utils.log("INFO", "No hammers remain, buying a hammer")
                 self.merchant.buy_item('hammer', self.merchant.MERCHANTS.BLACKSMITH)
 
         # Move to the anvil, if already there, nothing happens
@@ -66,7 +65,7 @@ class Forge():
         # Find the ingots in the player's backpack
         ingot = self.player.backpack.get_item('ingot')
         if not ingot:
-            self.utils.log("INFO", F"No ingots remain, selling {self.ITEM}s")
+            utils.log("INFO", F"No ingots remain, selling {self.ITEM}s")
             self.sell_items()
             self.move.go_to_anvil()
 
@@ -84,8 +83,8 @@ class Forge():
 
             # Something must actually be wrong
             if self.errors == 5:
-                self.utils.log("SEVERE", "Failed to open blacksmith menu after 5 attempts")
-                self.utils.quit_game()
+                utils.log("SEVERE", "Failed to open blacksmith menu after 5 attempts")
+                utils.quit_game()
 
             # Start the forge task over again
             return self.player.TASKS.FORGE

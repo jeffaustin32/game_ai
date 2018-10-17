@@ -3,7 +3,7 @@
     """
 from enum import Enum
 from time import sleep
-from utilities import Utilities
+import utilities as utils
 from user_interface import UserInterface
 from backpack import Backpack
 from mine import Mine
@@ -18,7 +18,6 @@ class Player():
     TASKS = Enum('Task', 'MINE, SMELT, FORGE')
 
     def __init__(self, game_map, task=TASKS.MINE):
-        self.utils = Utilities()
         self.user_interface = UserInterface()
         self.backpack = Backpack()
         self.mine = Mine(self, game_map)
@@ -65,16 +64,16 @@ class Player():
         # Check if HP is low
         if self.user_interface.get_health() < self.LOW_HEALTH:
             # Attempt to use a potion
-            self.utils.log("INFO", F"Health dropped below {self.LOW_HEALTH}")
+            utils.log("INFO", F"Health dropped below {self.LOW_HEALTH}")
             used_potion = self.backpack.use_item('potion', offset=(4, 9))
 
             # No potions were found
             if not used_potion:
-                self.utils.log("SEVERE", "No potions found")
-                self.utils.quit_game()
+                utils.log("SEVERE", "No potions found")
+                utils.quit_game()
 
             # Sleep so that there is no issue using the next item
-            self.utils.log("INFO", F"Used a potion")
+            utils.log("INFO", F"Used a potion")
             sleep(6)
 
     def is_weight_below_threshold(self, threshold):
@@ -84,7 +83,7 @@ class Player():
 
         # Check if the weight the player can carry is below the threshold
         if difference < threshold:
-            self.utils.log("INFO", F"Weight is {difference} from max, threshold was set to {threshold}")
+            utils.log("INFO", F"Weight is {difference} from max, threshold was set to {threshold}")
             return True
 
         return False

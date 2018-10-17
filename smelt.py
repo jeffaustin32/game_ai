@@ -4,8 +4,7 @@
 from time import sleep
 import pyautogui
 import cv2
-from utilities import Utilities
-from backpack import Backpack
+import utilities as utils
 from move import Move
 
 
@@ -14,7 +13,6 @@ class Smelt():
         This class performs smelting related tasks
         """
     def __init__(self, player, game_map):
-        self.utils = Utilities()
         self.move = Move(game_map)
         self.player = player
 
@@ -28,7 +26,7 @@ class Smelt():
             Check if the forge has gone cold. If so, fires it
             """
         # Get the smelter
-        screenshot = self.utils.take_screenshot()
+        screenshot = utils.take_screenshot()
         forge = screenshot[152:168, 168:184]
 
         # Check if the cold forge exists
@@ -51,7 +49,7 @@ class Smelt():
         # Find the ore in the player's backpack
         ore = self.player.backpack.get_item('ore')
         if not ore:
-            self.utils.log("INFO", "No ore remain, switching task to forging")
+            utils.log("INFO", "No ore remain, switching task to forging")
             return self.player.TASKS.FORGE
 
         # Fire the smelter if it is cold

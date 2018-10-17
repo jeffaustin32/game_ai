@@ -5,7 +5,7 @@ from enum import Enum
 from time import sleep
 import numpy as np
 import pyautogui
-from utilities import Utilities
+import utilities as utils
 from backpack import Backpack
 from user_interface import UserInterface
 
@@ -18,7 +18,6 @@ class Merchant:
 
     def __init__(self, game_map, move):
         self.user_interface = UserInterface()
-        self.utils = Utilities()
         self.backpack = Backpack()
         self.move = move
         self.game_map = game_map
@@ -50,8 +49,8 @@ class Merchant:
             merchant_tile = self.game_map.TILES.BANKER.value
             self.move.move_to(self.move.BANKER)
         else:
-            self.utils.log("SEVERE", "Invalid merchant_type supplied to move_to_merchant")
-            self.utils.quit_game()
+            utils.log("SEVERE", "Invalid merchant_type supplied to move_to_merchant")
+            utils.quit_game()
 
         # Update map so merchant's position will be current
         self.game_map.update_map()
@@ -131,8 +130,8 @@ class Merchant:
         # Open the "Buy or Sell" window
         buy_or_sell = self.open_merchant_window(merchant_type)
         if not buy_or_sell:
-            self.utils.log("SEVERE", F"Failed to click on {merchant_type} and open 'Buy or Sell' after 10 attempts")
-            self.utils.quit_game()
+            utils.log("SEVERE", F"Failed to click on {merchant_type} and open 'Buy or Sell' after 10 attempts")
+            utils.quit_game()
 
         # Click the buy button
         buy_button = self.user_interface.wait_for_ui_element('buy')
@@ -158,7 +157,7 @@ class Merchant:
         pyautogui.click()
 
         pyautogui.moveTo(400, 400)
-        self.utils.log("INFO", F"Bought a {item}")
+        utils.log("INFO", F"Bought a {item}")
 
     def sell_item(self, item, merchant_type):
         """
@@ -167,8 +166,8 @@ class Merchant:
         # Open the "Buy or Sell" window
         buy_or_sell = self.open_merchant_window(merchant_type)
         if not buy_or_sell:
-            self.utils.log("SEVERE", F"Failed to click on {merchant_type} and open 'Buy or Sell' after 10 attempts")
-            self.utils.quit_game()
+            utils.log("SEVERE", F"Failed to click on {merchant_type} and open 'Buy or Sell' after 10 attempts")
+            utils.quit_game()
 
         # Click the sell button
         sell_button = self.user_interface.wait_for_ui_element('sell')
@@ -189,7 +188,7 @@ class Merchant:
 
             # No item_locs left to sell
             if not item_loc:
-                self.utils.log("INFO", F"No {item} left to offer shopkeeper")
+                utils.log("INFO", F"No {item} left to offer shopkeeper")
                 break
 
             items_sold += 1
@@ -207,7 +206,7 @@ class Merchant:
         pyautogui.moveTo(cancel[0] + 5, cancel[1] + 5, 0.15)
         pyautogui.click()
 
-        self.utils.log("INFO", F"Sold {items_sold} {item}(s)")
+        utils.log("INFO", F"Sold {items_sold} {item}(s)")
         return items_sold
 
 

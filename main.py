@@ -7,7 +7,7 @@ import traceback
 import cv2
 import pyautogui
 from game_map import GameMap
-from utilities import Utilities
+import utilities as utils
 from user_interface import UserInterface
 from player import Player
 
@@ -19,7 +19,6 @@ if len(sys.argv) > 1:
 # Initialize classes
 game_map = GameMap()
 player = Player(game_map, task)
-utils = Utilities()
 user_interface = UserInterface()
 
 n = 3

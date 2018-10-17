@@ -6,7 +6,7 @@ from time import sleep
 import numpy as np
 import pyautogui
 from astar import AStar
-from utilities import Utilities
+import utilities as utils
 
 
 class Move:
@@ -32,7 +32,6 @@ class Move:
         # x-axis: 0 -> 81
         # y-axis: 163 -> 240
         self.astar = AStar()
-        self.utils = Utilities()
         self.game_map = game_map
 
     def move_to(self, destination, mining=False):
@@ -53,7 +52,7 @@ class Move:
             # Failed to get a path, retry up to 3 times
             if not path:
                 error += 1
-                self.utils.log(
+                utils.log(
                     "WARN", F"Failed to get path from {self.game_map.player_position} to {destination}")
                 
                 # Update map incase something was mislabeled
@@ -64,11 +63,11 @@ class Move:
                     return False
 
                 if error == 10:
-                    self.utils.log(
+                    utils.log(
                         "SEVERE", "Failed to get path after 10 attempts")
-                    self.utils.debug_print_matrix(
+                    utils.debug_print_matrix(
                         self.game_map.game_map.T)
-                    self.utils.quit_game()
+                    utils.quit_game()
 
                 # Wait for merchant to move
                 blacksmith_errors = 0
@@ -76,11 +75,11 @@ class Move:
                     # Don't wait forever for him to move
                     blacksmith_errors += 1
                     if blacksmith_errors == 20:
-                        self.utils.log(
+                        utils.log(
                             "SEVERE", "Waited 100 seconds for blacksmith to move, suspect error")
-                        self.utils.quit_game()
+                        utils.quit_game()
 
-                    self.utils.log(
+                    utils.log(
                         "INFO", "Blacksmith is blocking spot, waiting for him to move")
                     sleep(5)
                 continue
@@ -103,11 +102,11 @@ class Move:
                 turns_without_moving = 0
 
             if turns_without_moving == 10:
-                self.utils.log(
+                utils.log(
                     "SEVERE", "Failed to move after 10 attempts")
-                self.utils.debug_print_matrix(
+                utils.debug_print_matrix(
                     self.game_map.game_map.T)
-                self.utils.quit_game()
+                utils.quit_game()
         return True
 
     def step(self, new_position):
@@ -130,16 +129,16 @@ class Move:
         elif y_diff == -1:
             direction = 's'
         else:
-            self.utils.log(
+            utils.log(
                 'SEVERE', F"Invalid step difference. xDiff: {x_diff}, yDiff: {y_diff}")
-            self.utils.quit_game()
+            utils.quit_game()
 
         # Move along path
         pyautogui.press(direction)
         sleep(0.1)
 
         # Player moved, re-detect environment
-        screenshot = self.utils.take_screenshot()
+        screenshot = utils.take_screenshot()
         self.game_map.update_player_position(screenshot)
         self.game_map.update_map()
 
@@ -153,9 +152,9 @@ class Move:
         if self.game_map.player_position == self.WEAPON_SHOPKEEPER:
             return
 
-        self.utils.log('INFO', F"Moving to shopkeeper {self.WEAPON_SHOPKEEPER}")
+        utils.log('INFO', F"Moving to shopkeeper {self.WEAPON_SHOPKEEPER}")
         self.move_to(self.WEAPON_SHOPKEEPER)
-        self.utils.log(
+        utils.log(
             'INFO', F"Arrived at shopkeeper {self.game_map.player_position}")
 
     def go_to_mine(self):
@@ -210,7 +209,7 @@ class Move:
                 # Check if this was the only visible mountain
                 if len(mountains[0]) == 1:
                     # Go back to the starting mining position
-                    self.utils.log("INFO", "Only a single mountain visible, returning to start position")
+                    utils.log("INFO", "Only a single mountain visible, returning to start position")
                     coords = self.MOUNTAIN_RANGE
 
                 # There are other possible mountains, try again
@@ -219,9 +218,9 @@ class Move:
             mine_at = (192, 176)
 
             # Walk to the mountain
-            self.utils.log('INFO', F"Moving to mineable rock {coords}")
+            utils.log('INFO', F"Moving to mineable rock {coords}")
             arrived_at_destination = self.move_to(coords, True)
-        self.utils.log(
+        utils.log(
             'INFO', F"Arrived at mineable rock {self.game_map.player_position}")
         return mine_at
 
@@ -233,9 +232,9 @@ class Move:
         if self.game_map.player_position == self.FURNACE:
             return
 
-        self.utils.log('INFO', F"Moving to furnace {self.FURNACE}")
+        utils.log('INFO', F"Moving to furnace {self.FURNACE}")
         self.move_to(self.FURNACE)
-        self.utils.log(
+        utils.log(
             'INFO', F"Arrived at furnace {self.game_map.player_position}")
         
     def go_to_anvil(self):
@@ -246,9 +245,9 @@ class Move:
         if self.game_map.player_position == self.ANVIL:
             return
 
-        self.utils.log('INFO', F"Moving to anvil {self.ANVIL}")
+        utils.log('INFO', F"Moving to anvil {self.ANVIL}")
         self.move_to(self.ANVIL)
-        self.utils.log(
+        utils.log(
             'INFO', F"Arrived at anvil {self.game_map.player_position}")
 
     # TODO: Encorporate all click positioning into merchant class
@@ -264,7 +263,7 @@ class Move:
         ]
         index = np.where(nearby == self.game_map.TILES.BLACKSMITH.value)
         if len(index[0]) == 0:
-            self.utils.log(
+            utils.log(
                 "INFO", "Blacksmith is not within sight, moving to furnace to find him")
             self.go_to_furnace()
 
@@ -317,9 +316,9 @@ class Move:
 
             # This has been way too many steps
             if steps == 50:
-                self.utils.log(
+                utils.log(
                     "SEVERE", "Blacksmith was within sight but still took 50 steps")
-                self.utils.quit_game()
+                utils.quit_game()
 
         # Calculate where to click for blacksmith
         click = (

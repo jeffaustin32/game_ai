@@ -1,4 +1,5 @@
 /__pycache__
+.pylintrc
 log.txt
 map.txt
 screenshot.png

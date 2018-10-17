@@ -5,7 +5,7 @@ import os
 import cv2
 import numpy as np
 import pyautogui
-from utilities import Utilities
+import utilities as utils
 
 
 class Backpack:
@@ -29,8 +29,6 @@ class Backpack:
     DAGGER_LOC = (96, 92)
 
     def __init__(self):
-        self.utils = Utilities()
-
         # Load all backpack item templates
         self.item_templates = dict()
         for item in os.listdir('./backpack_items'):
@@ -46,14 +44,14 @@ class Backpack:
             containing the backpack and the coordinates
             """
         # Find backpack in screenshot
-        screenshot = self.utils.take_screenshot(False)
+        screenshot = utils.take_screenshot(False)
         result = cv2.matchTemplate(screenshot, self.backpack_template, cv2.TM_CCORR_NORMED)
         _, max_val, _, backpack_loc = cv2.minMaxLoc(result)
 
         # Failed to find the backpack with high confidence
         if max_val < 0.9:
-            self.utils.log("SEVERE", "Unable to find backpack in screenshot")
-            self.utils.quit_game()
+            utils.log("SEVERE", "Unable to find backpack in screenshot")
+            utils.quit_game()
 
         # Restrict screenshot to just include the player's backpack
         #backpack_loc = (backpack_loc[0] + 11, backpack_loc[1] + 33)
@@ -111,8 +109,8 @@ class Backpack:
         # Failed to find item in backpack with high confidence
         if max_val < 0.9:
             if exit_on_failure:
-                self.utils.log("SEVERE", F"Unable to find {item} in backpack. max_val: {max_val:3.2f}")
-                self.utils.quit_game()
+                utils.log("SEVERE", F"Unable to find {item} in backpack. max_val: {max_val:3.2f}")
+                utils.quit_game()
             else:
                 return False
 
@@ -133,7 +131,7 @@ class Backpack:
         pyautogui.doubleClick()
 
         # Check if a macro challenge occurred
-        self.utils.resolve_macro_check()
+        utils.resolve_macro_check()
 
         if use_at is None:
             return True

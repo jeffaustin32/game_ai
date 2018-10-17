@@ -2,7 +2,7 @@
     This module performs mining related tasks
     """
 import cv2
-from utilities import Utilities
+import utilities as utils
 from move import Move
 from user_interface import UserInterface
 from merchant import Merchant
@@ -14,7 +14,6 @@ class Mine():
         """
 
     def __init__(self, player, game_map):
-        self.utils = Utilities()
         self.move = Move(game_map)
         self.user_interface = UserInterface()
         self.merchant = Merchant(game_map, self.move)
@@ -35,7 +34,7 @@ class Mine():
             """
         # Get player's weight
         if self.player.is_weight_below_threshold(50):
-            self.utils.log("INFO", F"Weight is below threshold, switching task to smelting")
+            utils.log("INFO", F"Weight is below threshold, switching task to smelting")
             return self.player.TASKS.SMELT
 
         # No pickaxes left, buy one
@@ -48,7 +47,7 @@ class Mine():
             self.mining_coords = self.move.go_to_mine()
 
         # Check if there is still ore to mine here
-        screenshot = self.utils.take_screenshot()
+        screenshot = utils.take_screenshot()
         self.resolve_nothing_to_mine(screenshot)
         self.resolve_cannot_mine(screenshot)
 
@@ -65,7 +64,7 @@ class Mine():
             """
         # Find a new rock to mine
         if self.check_last_message_for('cannotMineThere', screenshot):
-            self.utils.log("INFO", "Cannot mine there")
+            utils.log("INFO", "Cannot mine there")
             self.mining_coords = self.move.go_to_mine()
 
     def resolve_nothing_to_mine(self, screenshot):
@@ -75,7 +74,7 @@ class Mine():
             """
         # Find a new rock to mine
         if self.check_last_message_for('nothingToMine', screenshot):
-            self.utils.log("INFO", "Nothing to mine here")
+            utils.log("INFO", "Nothing to mine here")
             self.mining_coords = self.move.go_to_mine()
 
     def check_last_message_for(self, message, screenshot):

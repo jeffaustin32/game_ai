@@ -7,7 +7,7 @@ from time import sleep
 import cv2
 import pytesseract
 import pyautogui
-from utilities import Utilities
+import utilities as utils
 
 class UserInterface:
     """
@@ -15,8 +15,6 @@ class UserInterface:
         """
 
     def __init__(self):
-        self.utils = Utilities()
-
         # Load all UI element templates
         self.templates = dict()
         for tile in os.listdir('./ui_elements'):
@@ -50,8 +48,8 @@ class UserInterface:
 
         # Failed to find the UI element after 10 attempts
         if not element_loc and exit_on_fail:
-            self.utils.log("SEVERE", F"Failed to find {element} after waiting and searching 20 times")
-            self.utils.quit_game()
+            utils.log("SEVERE", F"Failed to find {element} after waiting and searching 20 times")
+            utils.quit_game()
 
         # Failed to find element but failure will be handled elsewhere
         return False
@@ -65,7 +63,7 @@ class UserInterface:
 
         # Get a screenshot
         if screenshot is None:
-            screenshot = self.utils.take_screenshot(False)
+            screenshot = utils.take_screenshot(False)
 
         # Try to match the template in the screenshot
         result = cv2.matchTemplate(screenshot, self.templates[element], cv2.TM_CCORR_NORMED)
@@ -80,15 +78,15 @@ class UserInterface:
             return False
 
         # Not finding the element is severe enough to quit the game
-        self.utils.log("SEVERE", F"Failed to find {element}, max confidence was {max_val}")
-        self.utils.quit_game()
+        utils.log("SEVERE", F"Failed to find {element}, max confidence was {max_val}")
+        utils.quit_game()
 
     def get_weight(self):
         """
             Gets the player's current and max weight
             """
         # Find the current and total weight
-        screenshot = self.utils.take_screenshot(False)
+        screenshot = utils.take_screenshot(False)
         weight = self.get_ui_element('weight', screenshot)
         weight = screenshot[weight[1]:(weight[1] + 12), (weight[0] + 40):(weight[0] + 84)]
 
@@ -102,10 +100,10 @@ class UserInterface:
 
         weight_text = ''
         try:
-            weight_text = pytesseract.image_to_string(weight, config=self.utils.TESSERACT_CONF)
+            weight_text = pytesseract.image_to_string(weight, config=utils.TESSERACT_CONF)
         except UnicodeDecodeError:
-            self.utils.log("SEVERE", "Tesseract failed to parse player weight from screenshot")
-            self.utils.quit_game()
+            utils.log("SEVERE", "Tesseract failed to parse player weight from screenshot")
+            utils.quit_game()
 
         # Split the equation and calculate the difference
         current_weight, max_weight = weight_text.split("/")[0::1]
@@ -116,7 +114,7 @@ class UserInterface:
             Gets the player's current health
             """
         # Reduce the screenshot to include only the player's health
-        screenshot = self.utils.take_screenshot(False)
+        screenshot = utils.take_screenshot(False)
         health = self.get_ui_element('health', screenshot)
         health = screenshot[health[1]:(health[1] + 12), (health[0] + 36):(health[0] + 92)]
 
@@ -130,10 +128,10 @@ class UserInterface:
 
         health_text = ''
         try:
-            health_text = pytesseract.image_to_string(health, config=self.utils.TESSERACT_CONF)
+            health_text = pytesseract.image_to_string(health, config=utils.TESSERACT_CONF)
         except UnicodeDecodeError:
-            self.utils.log("SEVERE", "Tesseract failed to parse player health from screenshot")
-            self.utils.quit_game()
+            utils.log("SEVERE", "Tesseract failed to parse player health from screenshot")
+            utils.quit_game()
 
         # Split the equation and calculate the difference
         current = health_text.split("/")[0]

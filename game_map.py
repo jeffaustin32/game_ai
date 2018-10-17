@@ -9,7 +9,7 @@ import numpy as np
 import cv2
 import pyautogui
 import pytesseract
-from utilities import Utilities
+import utilities as utils
 from backpack import Backpack
 
 class GameMap:
@@ -26,7 +26,6 @@ class GameMap:
             Create a tuple for each tile containing the following properties:
             0: tile data, 1: name
             """
-        self.utils = Utilities()
         self.backpack = Backpack()
 
         try:
@@ -87,7 +86,7 @@ class GameMap:
             self.backpack.use_item('sextant', None, (5, 2), True)
 
             # Take a new screenshot that includes the location
-            screenshot = self.utils.take_screenshot()
+            screenshot = utils.take_screenshot()
 
             # Find the current position
             position = screenshot[450: 465, 120: 180]
@@ -104,23 +103,23 @@ class GameMap:
                 # Split the text into coordinates
                 sextant_x, sextant_y = text.split(", ")[0::1]
             except UnicodeDecodeError:
-                self.utils.log(
+                utils.log(
                     "SEVERE", F"Unable to parse sextant coordinates string")
-                self.utils.quit_game()
+                utils.quit_game()
             except ValueError as value_error:
-                self.utils.log("WARN", F"{value_error}")
+                utils.log("WARN", F"{value_error}")
                 # Move mouse to a neutral position that won't obstruct template matching
                 pyautogui.moveTo(400, 400)
                 errors += 1
 
             if errors == 10:
-                self.utils.log(
+                utils.log(
                     "SEVERE", F"Sextant failed 10 times")
-                self.utils.quit_game()
+                utils.quit_game()
 
         # Normalize the coordinates to fit the map indicies
-        normalized_x = int(sextant_x) - self.utils.NORMALIZATION_CONSTANT
-        normalized_y = int(sextant_y) - self.utils.NORMALIZATION_CONSTANT
+        normalized_x = int(sextant_x) - utils.NORMALIZATION_CONSTANT
+        normalized_y = int(sextant_y) - utils.NORMALIZATION_CONSTANT
 
         # Remove old player position from the map
         self.game_map[self.game_map == self.TILES.PLAYER.value] = self.TILES.ACCESSIBLE.value
@@ -173,7 +172,7 @@ class GameMap:
 
         # Take screenshot and isolate the gamplay region
         if screenshot is None:
-            screenshot = self.utils.take_screenshot()
+            screenshot = utils.take_screenshot()
         play = screenshot[8:344, 8:344]
 
         # Loop through all unknown tiles in the nearby
