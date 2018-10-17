@@ -136,7 +136,7 @@ class Move:
 
         # Move along path
         pyautogui.press(direction)
-        sleep(0.3)
+        sleep(0.1)
 
         # Player moved, re-detect environment
         screenshot = self.utils.take_screenshot()

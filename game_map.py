@@ -28,11 +28,19 @@ class GameMap:
             """
         self.utils = Utilities()
         self.backpack = Backpack()
-        self.game_map = np.ones(shape=(82, 240), dtype="int")
-        self.game_map[:, 0:166] = self.TILES.INACCESSIBLE.value
-        self.game_map[:, -10:-1] = self.TILES.INACCESSIBLE.value
-        self.game_map[0, :] = self.TILES.INACCESSIBLE.value
-        self.game_map[-10:-1, :] = self.TILES.INACCESSIBLE.value
+
+        try:
+            # Load the saved map from disk
+            self.game_map = np.loadtxt('map.txt', dtype=int)
+        except OSError:
+            # Map does not exist, create a new one
+            self.game_map = np.ones(shape=(82, 240), dtype="int")
+            self.game_map[:, 0:166] = self.TILES.INACCESSIBLE.value
+            self.game_map[:, -10:-1] = self.TILES.INACCESSIBLE.value
+            self.game_map[0, :] = self.TILES.INACCESSIBLE.value
+            self.game_map[-10:-1, :] = self.TILES.INACCESSIBLE.value
+        
+        # Initialize the player position
         self.player_position = (0, 0)
 
         self.templates = []
@@ -232,3 +240,6 @@ class GameMap:
             # Only allow mountains to be minable if they are beside gravel
             if not tile_left == self.TILES.GRAVEL.value:
                 nearby[(i, j)] = self.TILES.INACCESSIBLE.value
+
+        # Save the game map to disk
+        np.savetxt('map.txt', self.game_map, fmt='%d')
