@@ -3,7 +3,6 @@
     region and perform actions with them.
     """
 import os
-from time import sleep
 from enum import Enum
 import re
 import numpy as np
@@ -25,9 +24,7 @@ class GameMap:
     def __init__(self):
         """
             Create a tuple for each tile containing the following properties:
-            0: tile data, 1: name, 2: frequency
-            Frequency will be incremented every time the tile is found
-            and be used to sort the list. This will result in fewer overall comparisons
+            0: tile data, 1: name
             """
         self.utils = Utilities()
         self.backpack = Backpack()
@@ -38,29 +35,25 @@ class GameMap:
         self.game_map[-10:-1, :] = self.TILES.INACCESSIBLE.value
         self.player_position = (0, 0)
 
+        self.templates = []
         # Load all accessible tile templates
-        self.accessible_templates = []
-        for tile in os.listdir('./accessible_tiles'):
+        for tile in [f for f in os.listdir('./accessible_tiles') if f.endswith('.png')]:
             tile_template = cv2.imread('./accessible_tiles/' + tile)
             tile_template = cv2.cvtColor(tile_template, cv2.COLOR_BGR2GRAY)
-            self.accessible_templates.append(
-                [tile_template, 'accessible/' + tile.split('.')[0], 0])
+            self.templates.append([tile_template, 'accessible/' + tile.split('.')[0]])
 
         # Load all inaccessible tile templates
-        self.inaccessible_templates = []
-        for tile in os.listdir('./inaccessible_tiles'):
+        for tile in [f for f in os.listdir('./inaccessible_tiles') if f.endswith('.png')]:
             tile_template = cv2.imread('./inaccessible_tiles/' + tile)
             tile_template = cv2.cvtColor(tile_template, cv2.COLOR_BGR2GRAY)
-            self.inaccessible_templates.append(
-                [tile_template, 'inaccessible/' + tile.split('.')[0], 0])
-        
+            self.templates.append([tile_template, 'inaccessible/' + tile.split('.')[0]])
+
          # Load all NPC tile templates
-        self.npc_templates = []
-        for tile in os.listdir('./npcs'):
+        for tile in [f for f in os.listdir('./npcs') if f.endswith('.png')]:
             tile_template = cv2.imread('./npcs/' + tile)
             tile_template = cv2.cvtColor(tile_template, cv2.COLOR_BGR2GRAY)
-            self.npc_templates.append(
-                [tile_template, 'npcs/' + tile.split('.')[0], 0])
+            self.templates.append([tile_template, 'npcs/' + tile.split('.')[0]])
+
 
     def update_player_position(self, screenshot):
         """To update the player position the following steps are taken.
@@ -122,8 +115,7 @@ class GameMap:
         normalized_y = int(sextant_y) - self.utils.NORMALIZATION_CONSTANT
 
         # Remove old player position from the map
-        self.game_map[self.game_map ==
-                      self.TILES.PLAYER.value] = self.TILES.ACCESSIBLE.value
+        self.game_map[self.game_map == self.TILES.PLAYER.value] = self.TILES.ACCESSIBLE.value
         self.player_position = (normalized_x, normalized_y)
         self.game_map[self.player_position] = self.TILES.PLAYER.value
 
@@ -149,7 +141,7 @@ class GameMap:
             # Very high confidence that this is the correct tile
             if max_val > 0.99:
                 break
-        
+
         return potential_tiles
 
     def update_map(self, screenshot=None):
@@ -161,122 +153,85 @@ class GameMap:
             When a match is found, the frequency of that tile is incremented
             so future chunks are compared with high frequency tiles first.
             """
-
-        # Clear all in the nearby
+        # Get the visible tiles
         nearby = self.game_map[
             (self.player_position[0] - 10): (self.player_position[0] + 11),
             (self.player_position[1] - 10): (self.player_position[1] + 11)
         ]
-        nearby.fill(self.TILES.UNKNOWN.value)
+
+        # Clear NPCs in the nearby as they may have moved
+        nearby[nearby == self.TILES.WEAPON_SHOPKEEPER.value] = self.TILES.UNKNOWN.value
+        nearby[nearby == self.TILES.BLACKSMITH.value] = self.TILES.UNKNOWN.value
 
         # Take screenshot and isolate the gamplay region
         if screenshot is None:
             screenshot = self.utils.take_screenshot()
         play = screenshot[8:344, 8:344]
 
-        # loop through gameplay region, incrementing by 16 pixels
-        for i in range(21):
-            for j in range(21):
-                # Scale up the dimensions
-                tile_x = j * self.TILE_DIM
-                tile_y = i * self.TILE_DIM
+        # Loop through all unknown tiles in the nearby
+        for i, j in zip(*np.where(nearby == self.TILES.UNKNOWN.value)):
+            # Scale up the dimensions
+            tile_x = j * self.TILE_DIM
+            tile_y = i * self.TILE_DIM
 
-                # The center cell is always the player
-                if i == 10 and j == 10:
-                    tile_x = self.player_position[0] + int(tile_x / 16) - 10
-                    tile_y = self.player_position[1] + int(tile_y / 16) - 10
-                    self.game_map[(tile_x, tile_y)] = self.TILES.PLAYER.value
-                    continue
-
-                # Slice the tile from the play region
-                tile = play[tile_y:tile_y + self.TILE_DIM,
-                            tile_x:tile_x + self.TILE_DIM]
-
+            # The center cell is always the player
+            if i == 10 and j == 10:
                 tile_x = self.player_position[0] + int(tile_x / 16) - 10
                 tile_y = self.player_position[1] + int(tile_y / 16) - 10
+                self.game_map[(tile_x, tile_y)] = self.TILES.PLAYER.value
+                continue
 
-                # Go through all tile types looking for a high confidence match
-                potential_tiles = []
-                potential_tiles += self.match_template_type(tile, self.inaccessible_templates)
-                potential_tiles += self.match_template_type(tile, self.accessible_templates)
-                potential_tiles += self.match_template_type(tile, self.npc_templates)
+            # Slice the tile from the play region
+            tile = play[tile_y:tile_y + self.TILE_DIM,
+                        tile_x:tile_x + self.TILE_DIM]
 
-                # Failed to find a template match for the tile
-                if len(potential_tiles) == 0:
-                    # Assume it is inaccessible
-                    self.game_map[(tile_x, tile_y)] = self.TILES.INACCESSIBLE.value
-                    continue
+            tile_x = self.player_position[0] + int(tile_x / 16) - 10
+            tile_y = self.player_position[1] + int(tile_y / 16) - 10
 
-                # Sort the potential tiles to find the most likely
-                potential_tiles = sorted(
-                    potential_tiles, key=lambda tup: tup[1])
+            # Go through all tile types looking for a high confidence match
+            template = None
+            for potential_template in self.templates:
+                if np.allclose(potential_template[0], tile, 1, 1):
+                    template = potential_template
+                    break
 
-                # Chose the most likely template
-                template = potential_tiles[0][0]
+            # No match, assume it is inaccessible
+            if template is None:
+                self.game_map[(tile_x, tile_y)] = self.TILES.INACCESSIBLE.value
+                continue
 
-                # Increment tile occurrence frequency
-                template[2] += 1
+            # By default, mark tile as inaccessible
+            label = None
 
-                # By default, mark tile as inaccessible
-                label = None
+            # Mark as mineable
+            if re.search(r'rock', template[1], re.M | re.I):
+                label = self.TILES.MOUNTAIN.value
+            elif re.search(r'door', template[1], re.M | re.I):
+                label = self.TILES.DOOR.value
+            elif re.search(r'gravel', template[1], re.M | re.I):
+                label = self.TILES.GRAVEL.value
+            elif re.search(r'shopkeeper', template[1], re.M | re.I):
+                label = self.TILES.WEAPON_SHOPKEEPER.value
+            elif re.search(r'blacksmith', template[1], re.M | re.I):
+                label = self.TILES.BLACKSMITH.value
+            elif re.search(r'guard', template[1], re.M | re.I):
+                label = self.TILES.INACCESSIBLE.value
+            elif re.search(r'inaccessible', template[1], re.M | re.I):
+                label = self.TILES.INACCESSIBLE.value
+            elif re.search(r'accessible', template[1], re.M | re.I):
+                label = self.TILES.ACCESSIBLE.value
 
-                # Mark as mineable
-                if re.search(r'rock', template[1], re.M | re.I):
-                    label = self.TILES.MOUNTAIN.value
-                elif re.search(r'door', template[1], re.M | re.I):
-                    label = self.TILES.DOOR.value
-                elif re.search(r'gravel', template[1], re.M | re.I):
-                    label = self.TILES.GRAVEL.value
-                elif re.search(r'shopkeeper', template[1], re.M | re.I):
-                    label = self.TILES.WEAPON_SHOPKEEPER.value
-                elif re.search(r'blacksmith', template[1], re.M | re.I):
-                    label = self.TILES.BLACKSMITH.value
-                elif re.search(r'guard', template[1], re.M | re.I):
-                    label = self.TILES.INACCESSIBLE.value
-                elif re.search(r'inaccessible', template[1], re.M | re.I):
-                    label = self.TILES.INACCESSIBLE.value
-                elif re.search(r'accessible', template[1], re.M | re.I):
-                    label = self.TILES.ACCESSIBLE.value
-                
-                if label is None:
-                    print(template[1])
+            if label is None:
+                print(template[1])
 
-                # Calculate coordinates of tile in the map relative to the player
-                self.game_map[(tile_x, tile_y)] = label
+            # Calculate coordinates of tile in the map relative to the player
+            self.game_map[(tile_x, tile_y)] = label
 
-        # Sort the tiles based on their frequency
-        self.accessible_templates = sorted(
-            self.accessible_templates, key=lambda tup: tup[2])
-        self.inaccessible_templates = sorted(
-            self.inaccessible_templates, key=lambda tup: tup[2])
-        self.npc_templates = sorted(
-            self.npc_templates, key=lambda tup: tup[2])
+        # Go through all tiles in the gameplay region to find the mountains
+        for i, j in zip(*np.where(nearby == self.TILES.MOUNTAIN.value)):
+            # Get the tile to the left of the mountain
+            tile_left = nearby[(i-1, j)]
 
-        self.update_mountain_accessibility()
-        return
-
-    def update_mountain_accessibility(self):
-        """
-            This method is intended to be executed after tile detection has occurred.
-            It will examine all the newly added around the player and check that
-            each mountain tile has atleast one accessible tile adjacent to it. If it
-            does not, it will update the map to relabel that tile as inaccessibl.
-            """
-        # Slice a view of the map, restricted to just the visible range
-        nearby = self.game_map[
-            (self.player_position[0] - 10): (self.player_position[0] + 11),
-            (self.player_position[1] - 10): (self.player_position[1] + 11)
-        ]
-
-        # Go through all tiles in the gameplay region
-        for i in range(21):
-            for j in range(21):
-                # Found a mountain tile
-                if nearby[(i, j)] == self.TILES.MOUNTAIN.value:
-                    tile_left = nearby[(i-1, j)]
-
-                    # Only allow mountains to be minable if they are beside gravel
-                    if not tile_left == self.TILES.GRAVEL.value:
-                        nearby[(i, j)] = self.TILES.INACCESSIBLE.value
-
-        return self.game_map
+            # Only allow mountains to be minable if they are beside gravel
+            if not tile_left == self.TILES.GRAVEL.value:
+                nearby[(i, j)] = self.TILES.INACCESSIBLE.value
