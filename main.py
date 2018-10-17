@@ -21,14 +21,8 @@ game_map = GameMap()
 player = Player(game_map, task)
 user_interface = UserInterface()
 
-n = 3
-for i in range(n):
-    # Wait
-    print(F"Launching game in {n - i} seconds...")
-    sleep(1)
-
-utils.log("====", "====================================================")
-utils.log("====", "Initializing...")
+utils.log("INIT", "====================================================")
+utils.log("INIT", "Initializing...")
 utils.log("INIT", F"Default task set to {task}")
 
 # Find blocking window in screenshot
@@ -54,10 +48,10 @@ utils.log("INIT", F"Player location initialized")
 game_map.update_map()
 utils.log("INIT", "Field of view mapped")
 utils.log("INIT", "Initialization complete")
-utils.log("====", "====================================================")
+utils.log("INIT", "====================================================")
 try:
     while utils.bring_game_to_foreground():
-        player.perform_task()   
+        player.perform_task()
 except Exception as exception:
     utils.log("SEVERE", exception)
     utils.log("SEVERE", traceback.format_exc())

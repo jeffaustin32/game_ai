@@ -67,7 +67,7 @@ def bring_game_to_foreground():
     # Found CMD icon with high confidence
     if max_val > 0.9:
         click_at = (max_loc[0] + 12, max_loc[1] + 12)
-        log("INFO", F"Found CMD icon, game must have closed")
+        log("INFO", F"Found CMD icon and no game icon, game must have closed")
         raise SystemExit
 
     # Game must be open
@@ -114,7 +114,7 @@ def resolve_macro_check():
         Checks for and resolves a macro challenge
         """
     # Sleep for a moment to give the window time to open
-    sleep(0.5)
+    sleep(0.3)
 
     # Move mouse to a neutral position that won't obstruct template matching
     pyautogui.moveTo(400, 400)

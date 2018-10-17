@@ -33,10 +33,9 @@ class Player():
             Checks health, organizes backpack and then performs
             one of the following tasks: mine, smelt, or forge
             """
+        # Do pre-task checks
         self.action_count += 1
 
-        # Do pre-task checks
-        self.organize_backpack()
         # Only check health every 25 turns (it is a slow process)
         if self.action_count % 25 == 0:
             self.action_count = 0
@@ -48,13 +47,16 @@ class Player():
             delay = 0
         elif self.task == self.TASKS.SMELT:
             self.task = self.smelt.smelt()
-            delay = 1
+            delay = 1.4
         elif self.task == self.TASKS.FORGE:
             self.task = self.forge.forge()
-            delay = 2
+            delay = 2.1
 
         # Give the task time to complete
         sleep(delay)
+
+        # Organize backpack now that items have been potentially added
+        self.organize_backpack()
 
     def check_health(self):
         """
@@ -69,8 +71,15 @@ class Player():
 
             # No potions were found
             if not used_potion:
-                utils.log("SEVERE", "No potions found")
-                utils.quit_game()
+                # Potions may be obscurred by items, try selling
+                self.forge.sell_items()
+                # Try using a potion again
+                used_potion = self.backpack.use_item('potion', offset=(4, 9))
+
+                # Still can't use potions, likely do not have any
+                if not used_potion:
+                    utils.log("SEVERE", "No potions found")
+                    utils.quit_game()
 
             # Sleep so that there is no issue using the next item
             utils.log("INFO", F"Used a potion")

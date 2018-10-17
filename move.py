@@ -5,7 +5,7 @@ import random
 from time import sleep
 import numpy as np
 import pyautogui
-from astar import AStar
+import astar
 import utilities as utils
 
 
@@ -27,11 +27,10 @@ class Move:
         # The bounding box for lyria is:
         #   x-axis: 3150 -> 3231
         #   y-axis: 3313 -> 3390
-        # Therefore, can normalize by subtracting 3156 from all sextant readings
+        # Therefore, can scale by subtracting 3156 from all sextant readings
         # The bounding box then becomes:
-        # x-axis: 0 -> 81
-        # y-axis: 163 -> 240
-        self.astar = AStar()
+        #   x-axis: 0 -> 81
+        #   y-axis: 163 -> 240
         self.game_map = game_map
 
     def move_to(self, destination, mining=False):
@@ -46,15 +45,13 @@ class Move:
         turns_without_moving = 0
         while not self.game_map.player_position == destination:
             # Find a path to the destination
-            path = self.astar.astar(
-                self.game_map.game_map, self.game_map.player_position, destination)
+            path = astar.get_path(self.game_map.game_map, self.game_map.player_position, destination)
 
             # Failed to get a path, retry up to 3 times
             if not path:
                 error += 1
-                utils.log(
-                    "WARN", F"Failed to get path from {self.game_map.player_position} to {destination}")
-                
+                utils.log("WARN", F"Failed to get path from {self.game_map.player_position} to {destination}")
+
                 # Update map incase something was mislabeled
                 self.game_map.update_map()
 
@@ -142,28 +139,12 @@ class Move:
         self.game_map.update_player_position(screenshot)
         self.game_map.update_map()
 
-    # TODO: Remove this class after merchant class done
-    def go_to_weapon_shopkeeper(self):
-        """
-            Moves player to the Lyrina weapon shopkeeper.
-            Player stops at the center tile of the three tile table.
-            This way, the player can always reach the shopkeeper
-            """
-        if self.game_map.player_position == self.WEAPON_SHOPKEEPER:
-            return
-
-        utils.log('INFO', F"Moving to shopkeeper {self.WEAPON_SHOPKEEPER}")
-        self.move_to(self.WEAPON_SHOPKEEPER)
-        utils.log(
-            'INFO', F"Arrived at shopkeeper {self.game_map.player_position}")
-
     def go_to_mine(self):
         """
             Moves player to a mineable rock and gives the pixel
             coordinates for the pickaxe to be used at. Only consider
             mountains within 10 rows above/below the player
             """
-        errors = 0
         arrived_at_destination = False
         coords = (0, 0)
         while not arrived_at_destination:
@@ -220,8 +201,7 @@ class Move:
             # Walk to the mountain
             utils.log('INFO', F"Moving to mineable rock {coords}")
             arrived_at_destination = self.move_to(coords, True)
-        utils.log(
-            'INFO', F"Arrived at mineable rock {self.game_map.player_position}")
+        utils.log('INFO', F"Arrived at mineable rock {self.game_map.player_position}")
         return mine_at
 
     def go_to_furnace(self):
@@ -249,81 +229,3 @@ class Move:
         self.move_to(self.ANVIL)
         utils.log(
             'INFO', F"Arrived at anvil {self.game_map.player_position}")
-
-    # TODO: Encorporate all click positioning into merchant class
-    def go_to_blacksmith(self):
-        """
-            Moves the player adjacent to the blacksmith NPC.
-            Used to buy pickaxes and hammers.
-            """
-        # Check if the blacksmith is within the player's sight
-        nearby = self.game_map.game_map[
-            (self.game_map.player_position[0] - 10): (self.game_map.player_position[0] + 11),
-            (self.game_map.player_position[1] - 10): (self.game_map.player_position[1] + 11)
-        ]
-        index = np.where(nearby == self.game_map.TILES.BLACKSMITH.value)
-        if len(index[0]) == 0:
-            utils.log(
-                "INFO", "Blacksmith is not within sight, moving to furnace to find him")
-            self.go_to_furnace()
-
-        destination = (0, 0)
-        click = None
-        steps = 0
-        while not self.game_map.player_position == destination:
-            # The blacksmith will be nearby
-            nearby = self.game_map.game_map[
-                (self.game_map.player_position[0] - 10): (self.game_map.player_position[0] + 11),
-                (self.game_map.player_position[1] - 10): (self.game_map.player_position[1] + 11)
-            ]
-
-            # Find the blacksmith
-            index = np.where(
-                nearby == self.game_map.TILES.BLACKSMITH.value)
-            if len(index[0]) == 0:
-                self.game_map.update_map()
-
-            blacksmith = (index[0][0], index[1][0])
-
-            # Find an accessible space beside the blacksmith
-            nearby_blacksmith = nearby[
-                (blacksmith[0] - 1): (blacksmith[0] + 2),
-                (blacksmith[1] - 1): (blacksmith[1] + 2)
-            ]
-
-            index = np.where(nearby_blacksmith ==
-                             self.game_map.TILES.PLAYER.value)
-            if len(index[0]) > 0:
-                click = (blacksmith[0] - 10, blacksmith[1] - 10)
-                break
-
-            index = np.where(nearby_blacksmith ==
-                             self.game_map.TILES.ACCESSIBLE.value)
-            destination = (index[0][0], index[1][0])
-            destination = (blacksmith[0] + destination[0] - 1,
-                           blacksmith[1] + destination[1] - 1)
-            # Player is always in the middle
-            player = (10, 10)
-
-            # Find path from player to destination
-            path = self.astar.astar(nearby, player, destination)
-            step_to = path[0]
-            step_to = (self.game_map.player_position[0] + step_to[0] - 10,
-                       self.game_map.player_position[1] + step_to[1] - 10)
-
-            self.step(step_to)
-            steps += 1
-
-            # This has been way too many steps
-            if steps == 50:
-                utils.log(
-                    "SEVERE", "Blacksmith was within sight but still took 50 steps")
-                utils.quit_game()
-
-        # Calculate where to click for blacksmith
-        click = (
-            (click[0] * 16) + 175,
-            (click[1] * 16) + 175
-        )
-
-        return click
