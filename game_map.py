@@ -171,8 +171,8 @@ class GameMap:
         # Loop through all unknown tiles in the nearby
         for i, j in zip(*np.where(nearby == self.TILES.UNKNOWN.value)):
             # Scale up the dimensions
-            tile_x = j * self.TILE_DIM
-            tile_y = i * self.TILE_DIM
+            tile_x = i * self.TILE_DIM
+            tile_y = j * self.TILE_DIM
 
             # The center cell is always the player
             if i == 10 and j == 10:
@@ -220,9 +220,6 @@ class GameMap:
                 label = self.TILES.INACCESSIBLE.value
             elif re.search(r'accessible', template[1], re.M | re.I):
                 label = self.TILES.ACCESSIBLE.value
-
-            if label is None:
-                print(template[1])
 
             # Calculate coordinates of tile in the map relative to the player
             self.game_map[(tile_x, tile_y)] = label

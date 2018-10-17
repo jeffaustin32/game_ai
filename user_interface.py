@@ -107,7 +107,6 @@ class UserInterface:
             self.utils.log("SEVERE", "Tesseract failed to parse player weight from screenshot")
             self.utils.quit_game()
 
-        print(F"Parsed weight as {weight_text}")
         # Split the equation and calculate the difference
         current_weight, max_weight = weight_text.split("/")[0::1]
         return int(current_weight), int(max_weight)
@@ -135,8 +134,7 @@ class UserInterface:
         except UnicodeDecodeError:
             self.utils.log("SEVERE", "Tesseract failed to parse player health from screenshot")
             self.utils.quit_game()
-        
-        print(F"Parsed health_text as {health_text}")
+
         # Split the equation and calculate the difference
         current = health_text.split("/")[0]
         return int(current)

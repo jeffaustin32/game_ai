@@ -29,8 +29,8 @@ for i in range(n):
     sleep(1)
 
 utils.log("====", "====================================================")
-utils.log("====", "Starting setup...")
-utils.log("SETUP", F"Default task set to {task}")
+utils.log("====", "Initializing...")
+utils.log("INIT", F"Default task set to {task}")
 
 # Find blocking window in screenshot
 screenshot = utils.take_screenshot(False)
@@ -40,7 +40,7 @@ _, max_val, _, max_loc = cv2.minMaxLoc(result)
 # Found the blocking window window with high confidence
 if max_val > 0.9:
     click_at = (max_loc[0] + 428, max_loc[1] + 144)
-    utils.log("SETUP", "Closed blocking window")
+    utils.log("INIT", "Closed blocking window")
     pyautogui.moveTo(click_at[0], click_at[1], 0.15)
     pyautogui.click()
     sleep(5)
@@ -51,13 +51,10 @@ utils.bring_game_to_foreground()
 # Detect environment
 screenshot = utils.take_screenshot()
 game_map.update_player_position(screenshot)
-utils.log("SETUP", F"Player location initialized")
-
+utils.log("INIT", F"Player location initialized")
 game_map.update_map()
-utils.log("SETUP", "Field of view mapped")
-
-# Setup complete, starting ai
-utils.log("SETUP", "Setup complete")
+utils.log("INIT", "Field of view mapped")
+utils.log("INIT", "Initialization complete")
 utils.log("====", "====================================================")
 try:
     while utils.bring_game_to_foreground():

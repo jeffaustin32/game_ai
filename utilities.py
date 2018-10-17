@@ -147,8 +147,6 @@ class Utilities:
                 self.log("SEVERE", "Tesseract failed to parse macro question from screenshot")
                 self.quit_game()
 
-            print(F"Parsed question is {question}")
-
             # Split the equation on the equals and evaluate it
             expression, consequent = question.split('=')[0::1]
             term1, term2 = expression.split('+')[0::1]
@@ -157,7 +155,6 @@ class Utilities:
             button_template = 'no.png'
             if int(term1) + int(term2) == int(consequent):
                 button_template = 'yes.png'
-            print(F"Choosing button template {button_template}")
 
             # Load button template and convert it to grayscale
             button_template = cv2.imread('./ui_elements/' + button_template)
